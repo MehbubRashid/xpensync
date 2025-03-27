@@ -3,6 +3,11 @@ import { useSettings } from '@/evolu/EvoluContext';
 import { Settings } from '@/types';
 type Currency = string;
 
+interface CustomCurrency {
+  currencyName: string;
+  rate: number;
+}
+
 interface CurrencyContextType {
   selectedCurrency: Currency;
   setSelectedCurrency: (currency: Currency) => void;
@@ -13,6 +18,8 @@ interface CurrencyContextType {
   exchangeRates: Record<string, number>;
   isLoading: boolean;
   isOffline: boolean;
+  customCurrencies: CustomCurrency[];
+  setCustomCurrencies: (currencies: CustomCurrency[]) => void;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -76,6 +83,25 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  const getCustomCurrencies = useCallback(() => {
+    const customCurrenciesSetting = settings.find((setting) => setting.key === 'customCurrencies');
+    if (customCurrenciesSetting) {
+      console.log(customCurrenciesSetting)
+      if ( Array.isArray(customCurrenciesSetting.value) ) {
+        return customCurrenciesSetting.value;
+      }
+      else {
+        try {
+          return JSON.parse(customCurrenciesSetting.value);
+        } catch (error) {
+          console.error('Error parsing custom currencies:', error);
+          return [];
+        }
+      }
+    }
+    return [];
+  }, [settings]);
+
   // Fetch exchange rates from API
   const fetchExchangeRates = useCallback(async () => {
     try {
@@ -83,13 +109,20 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
       const data = await response.json();
       
+      // Get custom currencies
+      const customCurrencies = getCustomCurrencies();
+      
       // Get all available currencies and their rates
       const rates: Record<string, number> = {
         USD: BASE_USD_RATE,
-        ...data.rates
+        ...data.rates,
+        ...customCurrencies.reduce((acc, curr) => ({
+          ...acc,
+          [curr.currencyName]: curr.rate
+        }), {})
       };
       
-      // Get all currency codes
+      // Get all currency codes including custom ones
       const currencies = Object.keys(rates);
       
       setExchangeRates(rates);
@@ -104,7 +137,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, [loadCachedData, saveToCache]);
+  }, [loadCachedData, saveToCache, getCustomCurrencies]);
 
   // Handle online/offline status
   useEffect(() => {
@@ -168,8 +201,52 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         enabledCurrencies = enabledCurrenciesSetting.value.split(',').map(c => c.trim());
       }
     }
-    return enabledCurrencies;
-  }, [settings]);
+
+    // Add custom currencies to enabled list
+    const customCurrencies = getCustomCurrencies();
+    const customCurrencyNames = customCurrencies.map(c => c.currencyName);
+    
+    // Combine and remove duplicates
+    return [...new Set([...enabledCurrencies, ...customCurrencyNames])];
+  }, [settings, getCustomCurrencies]);
+
+  const setCustomCurrencies = (currencies: CustomCurrency[]) => {
+    const targetResult = settings.find((setting) => setting.key === 'customCurrencies');
+    const value = JSON.stringify(currencies);
+    
+    if (!targetResult) {
+      // create as new setting
+      evoluSettings.addSetting('customCurrencies', value);
+    }
+    else {
+      const {id} = targetResult;
+      evoluSettings.updateSetting(id as any, 'customCurrencies', value);
+    }
+
+    // Get current enabled currencies
+    const currentEnabled = getEnabledCurrencies();
+    
+    // Get the list of custom currency names that were previously enabled
+    const oldCustomCurrencies = getCustomCurrencies();
+    const oldCustomCurrencyNames = oldCustomCurrencies.map(c => c.currencyName);
+    
+    // Get the list of new custom currency names
+    const newCustomCurrencyNames = currencies.map(c => c.currencyName);
+    
+    // Remove old custom currencies from enabled list
+    const nonCustomEnabled = currentEnabled.filter(curr => 
+      !oldCustomCurrencyNames.includes(curr)
+    );
+    
+    // Add new custom currencies to enabled list
+    const newEnabled = [
+      ...nonCustomEnabled,
+      ...newCustomCurrencyNames
+    ];
+    
+    // Update enabled currencies
+    setEnabledCurrencies(newEnabled);
+  };
 
   const setEnabledCurrencies = (currencies: string[]) => {
     // first get the settings id.
@@ -181,7 +258,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     else {
       const {id} = targetResult;
-      evoluSettings.updateSetting(id, 'enabledCurrencies', JSON.stringify(currencies));
+      evoluSettings.updateSetting(id as any, 'enabledCurrencies', JSON.stringify(currencies));
     }
   };
 
@@ -194,7 +271,7 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
     else {
       const {id} = targetResult;
-      evoluSettings.updateSetting(id, 'selectedCurrency', currency);
+      evoluSettings.updateSetting(id as any, 'selectedCurrency', currency);
     }
   };
 
@@ -218,7 +295,9 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       allCurrencies,
       exchangeRates,
       isLoading,
-      isOffline
+      isOffline,
+      customCurrencies: getCustomCurrencies(),
+      setCustomCurrencies
     }}>
       {children}
     </CurrencyContext.Provider>
