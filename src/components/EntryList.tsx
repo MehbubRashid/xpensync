@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEntry } from '@/context/EntryContext';
 import { useCurrency } from '@/context/CurrencyContext';
 import { format } from 'date-fns';
@@ -6,18 +6,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { EntryType, Currency } from '@/types';
-import { Trash2, ArrowDownCircle, ArrowUpCircle, Plus, ArrowUpDown } from 'lucide-react';
+import { Entry, EntryType, Currency } from '@/types';
+import { Trash2, ArrowDownCircle, ArrowUpCircle, Plus, ArrowUpDown, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoriesList } from './CategoriesList';
 import { WalletsList } from './WalletsList';
 import { formatDate } from '@/lib/date';
+import { EntryForm } from './EntryForm';
+import { EditEntryForm } from './EditEntryForm';
+import { EntryId, CategoryId, WalletId } from '@/evolu/schema';
 
 const TransactionsList: React.FC = () => {
-	const { getEntriesByDate, getCategoryById, getWalletById, filters, setFilters, categories, wallets, deleteEntry } = useEntry();
+	const { getEntriesByDate, getCategoryById, getWalletById, filters, setFilters, categories, wallets, deleteEntry, editEntry } = useEntry();
 	const { selectedCurrency, convertAmount } = useCurrency();
 	const entriesByDate = getEntriesByDate();
+	const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
 
 	const handleTypeChange = (value: string) => {
 		setFilters(prev => ({
@@ -47,13 +51,32 @@ const TransactionsList: React.FC = () => {
 		category => filters.type === 'all' || category.type === filters.type
 	);
 
-	const handleDeleteEntry = (id: string) => {
+	const handleDeleteEntry = (id: EntryId) => {
 		deleteEntry(id);
+	};
+
+	const handleEditEntry = (entry: Entry) => {
+		setEditingEntry(entry);
 	};
 
 	return (
 		<div className="space-y-4 animate-fade-in">
-
+			<Dialog open={!!editingEntry} onOpenChange={(open) => !open && setEditingEntry(null)}>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>Edit Transaction</DialogTitle>
+						<DialogDescription>
+							Make changes to your transaction here. Click save when you're done.
+						</DialogDescription>
+					</DialogHeader>
+					{editingEntry && (
+						<EditEntryForm 
+							entry={editingEntry} 
+							onClose={() => setEditingEntry(null)} 
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
 			<div className="flex flex-col sm:flex-row gap-2 mb-4 justify-end">
 				<div className="inline">
 					<Select
@@ -133,8 +156,8 @@ const TransactionsList: React.FC = () => {
 						<h4 className='mt-[30px] text-muted-foreground'>{formatDate(date)}</h4>
 						<div className="divide-y divide-border rounded-md border bg-card text-card-foreground shadow-sm">
 							{entries.map((entry) => {
-								const category = getCategoryById(entry.categoryId);
-								const wallet = getWalletById(entry.walletId);
+								const category = getCategoryById(entry.categoryId as CategoryId);
+								const wallet = getWalletById(entry.walletId as WalletId);
 								const convertedAmount = convertAmount(entry.amount, entry.currency as Currency);
 								return (
 									<div key={entry.id} className="block sm:flex justify-between items-center p-4">
@@ -149,15 +172,21 @@ const TransactionsList: React.FC = () => {
 												<ArrowUpDown className="h-5 w-5 text-purple-500" />
 											)}
 											<div className="flex flex-col gap-1">
-												<p className="text-sm font-medium leading-none">{entry.description}</p>
+												{
+													entry?.description ? (
+														<p className="text-sm font-medium leading-none">{entry.description}</p>
+													) : (
+														<></>
+													)
+												}
 												<div className="flex items-center gap-2 text-sm text-muted-foreground">
 													<span>
 														{entry.type === 'transfer'
-															? `Transfer to ${getWalletById(entry.toWalletId!)?.name || 'Unknown'}`
-															: category
-																? category.name
-																: entry.type === 'topup'
-																	? 'Wallet Topup'
+															? `Transfer to ${getWalletById(entry.toWalletId as WalletId)?.name || 'Unknown'}`
+															: entry.type === 'topup'
+																? 'Topup'
+																: category
+																	? category.name
 																	: 'Unknown Category'
 														}
 													</span>
@@ -184,6 +213,14 @@ const TransactionsList: React.FC = () => {
 											<p className="text-sm text-gray-500">
 												{entry.amount.toFixed(2)} {entry.currency}
 											</p>
+											<Button 
+												variant="ghost" 
+												size="icon" 
+												className="h-8 w-8 text-muted-foreground hover:text-primary"
+												onClick={() => handleEditEntry(entry as Entry)}
+											>
+												<Pencil className="h-4 w-4" />
+											</Button>
 											<Dialog>
 												<DialogTrigger asChild>
 													<Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
@@ -203,7 +240,7 @@ const TransactionsList: React.FC = () => {
 														</DialogClose>
 														<Button
 															variant="destructive"
-															onClick={() => handleDeleteEntry(entry.id)}
+															onClick={() => handleDeleteEntry(entry.id as EntryId)}
 														>
 															Delete
 														</Button>

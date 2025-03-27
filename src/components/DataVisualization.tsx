@@ -10,6 +10,8 @@ import { ChartData, TimeGrouping, EntryType, ChartFilters } from '@/types';
 import { Label } from '@/components/ui/label';
 import { format, subDays, eachDayOfInterval, isSameDay } from 'date-fns';
 import { formatDate } from '@/lib/date';
+import { useTheme } from '@/context/ThemeContext';
+
 
 const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
   if (active && payload && payload.length) {
@@ -31,6 +33,7 @@ export const DataVisualization: React.FC = () => {
   const { getChartData, chartFilters, setChartFilters, categories, entries, wallets } = useEntry();
   const { selectedCurrency, convertAmount } = useCurrency();
   const chartData = getChartData();
+  const { theme } = useTheme();
 
   // Convert chart data to selected currency
   const convertedChartData = useMemo(() => {
@@ -212,13 +215,13 @@ export const DataVisualization: React.FC = () => {
               <CartesianGrid 
                 vertical={false} 
                 strokeDasharray="5" 
-                strokeWidth={0.5} 
+                strokeWidth={theme === 'dark' ? 0.3 : 0.8} 
                 syncWithTicks={true}
-                strokeLinecap='round'
+                strokeOpacity={theme === 'dark' ? 0.4 : 0.8}
               />
               <XAxis 
                 dataKey="date" 
-                axisLine={{ stroke: '#ddd', strokeWidth: 0.8 }} 
+                axisLine={{ stroke: theme === 'dark' ? '#444444' : '#dddddd', strokeWidth: 0.8 }} 
                 tick={{ fill: '#71717a', fontSize: 12 }} 
               />
               <YAxis
@@ -232,6 +235,7 @@ export const DataVisualization: React.FC = () => {
                   dataKey="income"
                   stroke="#22c55e"
                   name="Income"
+                  dot={false}
                 />
               )}
               {chartFilters.entryType === 'expense' && (
@@ -240,6 +244,7 @@ export const DataVisualization: React.FC = () => {
                   dataKey="expense"
                   stroke="#ef4444"
                   name="Expenses"
+                  dot={false}
                 />
               )}
               {chartFilters.entryType === 'balance' && (
@@ -248,6 +253,7 @@ export const DataVisualization: React.FC = () => {
                   dataKey="balance"
                   stroke="#3b82f6"
                   name="Balance"
+                  dot={false}
                 />
               )}
             </LineChart>

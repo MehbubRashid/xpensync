@@ -88,7 +88,7 @@ export const FinancialSummary: React.FC = () => {
   const incomeChange = currentMonthIncome - previousMonthIncome;
   const incomeChangePercentage = previousMonthIncome !== 0 
     ? (incomeChange / previousMonthIncome) * 100 
-    : 100;
+    : currentMonthIncome !== 0 ? 100 : 0;
   
   // Calculate current month expense
   const currentMonthExpense = currentMonthEntries
@@ -104,7 +104,7 @@ export const FinancialSummary: React.FC = () => {
   const expenseChange = currentMonthExpense - previousMonthExpense;
   const expenseChangePercentage = previousMonthExpense !== 0 
     ? (expenseChange / previousMonthExpense) * 100 
-    : 100;
+    : currentMonthExpense !== 0 ? 100 : 0;
   
   // Calculate net income (income - expense)
   const currentMonthNetIncome = currentMonthIncome - currentMonthExpense;
@@ -114,7 +114,7 @@ export const FinancialSummary: React.FC = () => {
   const netIncomeChange = currentMonthNetIncome - previousMonthNetIncome;
   const netIncomeChangePercentage = previousMonthNetIncome !== 0 
     ? (netIncomeChange / previousMonthNetIncome) * 100 
-    : 100;
+    : currentMonthNetIncome !== 0 ? 100 : 0;
   
   // Calculate monthly average income
   // Get all unique months from entries
@@ -206,15 +206,15 @@ export const FinancialSummary: React.FC = () => {
           <div className="text-2xl font-bold">
             {currentMonthIncome.toFixed(2)} {selectedCurrency}
           </div>
-          <div className={`text-xs flex items-center mt-1 ${incomeChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {incomeChange >= 0 ? (
+          <div className={`text-xs flex items-center mt-1 ${incomeChange > 0 ? 'text-green-500' : incomeChange < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {incomeChange > 0 ? (
               <TrendingUp className="mr-1 h-3 w-3" />
-            ) : (
+            ) : incomeChange < 0 ? (
               <TrendingDown className="mr-1 h-3 w-3" />
-            )}
+            ) : null}
             <span>
-              {Math.abs(incomeChange).toFixed(2)} {selectedCurrency} ({Math.abs(incomeChangePercentage).toFixed(1)}%)
-              {incomeChange >= 0 ? ' increase' : ' decrease'} from last month
+              {incomeChange === 0 ? 'No change from last month' : 
+                `${Math.abs(incomeChange).toFixed(2)} ${selectedCurrency} (${Math.abs(incomeChangePercentage).toFixed(1)}%) ${incomeChange > 0 ? 'increase' : 'decrease'} from last month`}
             </span>
           </div>
         </CardContent>
@@ -230,15 +230,15 @@ export const FinancialSummary: React.FC = () => {
           <div className="text-2xl font-bold">
             {currentMonthExpense.toFixed(2)} {selectedCurrency}
           </div>
-          <div className={`text-xs flex items-center mt-1 ${expenseChange <= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {expenseChange <= 0 ? (
+          <div className={`text-xs flex items-center mt-1 ${expenseChange < 0 ? 'text-green-500' : expenseChange > 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {expenseChange < 0 ? (
               <TrendingDown className="mr-1 h-3 w-3" />
-            ) : (
+            ) : expenseChange > 0 ? (
               <TrendingUp className="mr-1 h-3 w-3" />
-            )}
+            ) : null}
             <span>
-              {Math.abs(expenseChange).toFixed(2)} {selectedCurrency} ({Math.abs(expenseChangePercentage).toFixed(1)}%)
-              {expenseChange <= 0 ? ' decrease' : ' increase'} from last month
+              {expenseChange === 0 ? 'No change from last month' : 
+                `${Math.abs(expenseChange).toFixed(2)} ${selectedCurrency} (${Math.abs(expenseChangePercentage).toFixed(1)}%) ${expenseChange < 0 ? 'decrease' : 'increase'} from last month`}
             </span>
           </div>
         </CardContent>
@@ -254,15 +254,15 @@ export const FinancialSummary: React.FC = () => {
           <div className={`text-2xl font-bold ${currentMonthNetIncome >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             {currentMonthNetIncome.toFixed(2)} {selectedCurrency}
           </div>
-          <div className={`text-xs flex items-center mt-1 ${netIncomeChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-            {netIncomeChange >= 0 ? (
+          <div className={`text-xs flex items-center mt-1 ${netIncomeChange > 0 ? 'text-green-500' : netIncomeChange < 0 ? 'text-red-500' : 'text-muted-foreground'}`}>
+            {netIncomeChange > 0 ? (
               <TrendingUp className="mr-1 h-3 w-3" />
-            ) : (
+            ) : netIncomeChange < 0 ? (
               <TrendingDown className="mr-1 h-3 w-3" />
-            )}
+            ) : null}
             <span>
-              {Math.abs(netIncomeChange).toFixed(2)} {selectedCurrency} ({Math.abs(netIncomeChangePercentage).toFixed(1)}%)
-              {netIncomeChange >= 0 ? ' increase' : ' decrease'} from last month
+              {netIncomeChange === 0 ? 'No change from last month' : 
+                `${Math.abs(netIncomeChange).toFixed(2)} ${selectedCurrency} (${Math.abs(netIncomeChangePercentage).toFixed(1)}%) ${netIncomeChange > 0 ? 'increase' : 'decrease'} from last month`}
             </span>
           </div>
         </CardContent>

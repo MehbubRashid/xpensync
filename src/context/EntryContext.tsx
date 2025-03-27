@@ -18,6 +18,7 @@ export interface EntryContextType {
   addEntry: (entry: Omit<Entry, 'id'>) => void;
   addCategory: (category: Omit<Category, 'id'>) => Category;
   addWallet: (wallet: Omit<Wallet, 'id'>) => Wallet;
+  editEntry: (id: EntryId, updates: Partial<Omit<Entry, 'id'>>) => void;
   editCategory: (id: CategoryId, updates: Partial<Omit<Category, 'id'>>) => void;
   editWallet: (id: WalletId, updates: Partial<Omit<Wallet, 'id'>>) => void;
   deleteEntry: (id: EntryId) => void;
@@ -73,6 +74,12 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Use Evolu to add the entry
     const result = evoluEntries.addEntry(entry as any);
     toast.success(entry.type === 'transfer' ? 'Transfer completed successfully' : 'Entry added successfully');
+  };
+
+  const editEntry = (id: EntryId, updates: Partial<Omit<Entry, 'id'>>) => {
+    // Use Evolu to update the entry
+    evoluEntries.updateEntry(id, updates as any);
+    toast.success('Entry updated successfully');
   };
 
   const deleteEntry = (id: EntryId) => {
@@ -401,18 +408,19 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       value={{
         entries,
         categories,
-          wallets,
+        wallets,
         addEntry,
         addCategory,
-          addWallet,
-          editCategory,
-          editWallet,
+        addWallet,
+        editEntry,
+        editCategory,
+        editWallet,
         deleteEntry,
-          deleteCategory,
-          deleteWallet,
-          getEntriesByDate,
-          getCategoryById,
-          getWalletById,
+        deleteCategory,
+        deleteWallet,
+        getEntriesByDate,
+        getCategoryById,
+        getWalletById,
         filters,
         setFilters,
         chartFilters,
