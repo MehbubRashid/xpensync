@@ -31,7 +31,7 @@ export const ThemeToggle: React.FC = () => {
         transition={{ duration: 0.2 }}
       >
         <Sun 
-          size={26} 
+          size={24} 
           className={cn("text-foreground", isDark ? "opacity-100" : "opacity-100")} 
         />
       </motion.div>
