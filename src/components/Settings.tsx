@@ -14,12 +14,15 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { useCurrency } from '@/context/CurrencyContext';
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export const Settings: React.FC = () => {
   const [currentMnemonic, setCurrentMnemonic] = useState('');
   const [restoreMnemonic, setRestoreMnemonic] = useState('');
   const evolu = useEvolu();
   const { allCurrencies, availableCurrencies, setEnabledCurrencies, exchangeRates } = useCurrency();
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const owner = evolu.getOwner();
@@ -112,30 +115,51 @@ export const Settings: React.FC = () => {
 
           <TabsContent value="currencies" className='pt-10'>
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium">Available Currencies</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Enable or disable currencies for use in transactions
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search currencies..."
+                  className="pl-8 leading-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
               <div className="rounded-md border">
-                <div className="divide-y">
-                  {allCurrencies.map((currency) => (
-                    <div key={currency} className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                          <p className="text-sm font-medium">{currency}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {currency === 'USD' ? 'Base currency' : `1 USD = ${exchangeRates[currency]} ${currency}`}
-                          </p>
+                <div className="divide-y max-h-[300px] overflow-y-auto">
+                  {allCurrencies
+                    .filter(currency => 
+                      currency.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((currency) => (
+                      <div key={currency} className="flex items-center justify-between p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col">
+                            <p className="text-sm font-medium">{currency}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {currency === 'USD' ? 'Base currency' : `1 USD = ${exchangeRates[currency]} ${currency}`}
+                            </p>
+                          </div>
                         </div>
+                        <Switch
+                          checked={availableCurrencies.includes(currency)}
+                          onCheckedChange={(checked) => {
+                            const newCurrencies = checked
+                              ? [...availableCurrencies, currency]
+                              : availableCurrencies.filter(c => c !== currency);
+                            setEnabledCurrencies(newCurrencies);
+                          }}
+                          disabled={currency === 'USD'} // USD cannot be disabled as it's the base currency
+                        />
                       </div>
-                      <Switch
-                        checked={availableCurrencies.includes(currency)}
-                        onCheckedChange={(checked) => {
-                          const newCurrencies = checked
-                            ? [...availableCurrencies, currency]
-                            : availableCurrencies.filter(c => c !== currency);
-                          setEnabledCurrencies(newCurrencies);
-                        }}
-                        disabled={currency === 'USD'} // USD cannot be disabled as it's the base currency
-                      />
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             </div>
