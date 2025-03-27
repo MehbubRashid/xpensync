@@ -8,6 +8,9 @@ interface CurrencyContextType {
   setSelectedCurrency: (currency: Currency) => void;
   convertAmount: (amount: number, fromCurrency: Currency) => number;
   availableCurrencies: Currency[];
+  setEnabledCurrencies: (currencies: string[]) => void;
+  allCurrencies: Currency[];
+  exchangeRates: Record<string, number>;
 }
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -16,11 +19,10 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 const EXCHANGE_RATES: Record<string, number> = {
   USD: 1,
   BDT: 110, // (1 USD = 110 BDT)
-  USDT: 1,  // 1:1 with USD
 };
 
 // Get available currencies from exchange rates
-const AVAILABLE_CURRENCIES = Object.keys(EXCHANGE_RATES) as Currency[];
+const ALL_CURRENCIES = Object.keys(EXCHANGE_RATES) as Currency[];
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
@@ -40,6 +42,38 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return selectedCurrency;
   }, [settings]);
 
+
+  const getEnabledCurrencies = useCallback(() => {
+    // by default only USD is enabled
+    let enabledCurrencies = ['USD'];
+    const enabledCurrenciesSetting = settings.find((setting) => setting.key === 'enabledCurrencies');
+    if (enabledCurrenciesSetting) {
+      if ( Array.isArray(enabledCurrenciesSetting.value) ) {
+        enabledCurrencies = enabledCurrenciesSetting.value;
+      } else if ( enabledCurrenciesSetting?.value.startsWith('[')) {
+        // convert from json to array
+        enabledCurrencies = JSON.parse(enabledCurrenciesSetting.value);
+      } else {
+        enabledCurrencies = enabledCurrenciesSetting.value.split(',').map(c => c.trim());
+      }
+    }
+    return enabledCurrencies;
+  }, [settings]);
+
+
+  const setEnabledCurrencies = (currencies: string[]) => {
+    // first get the settings id.
+    const targetResult = settings.find((setting) => setting.key === 'enabledCurrencies');
+    if (!targetResult) {
+      // create as new setting
+      const toset = JSON.stringify(currencies);
+      evoluSettings.addSetting('enabledCurrencies', toset);
+    }
+    else {
+      const {id} = targetResult;
+      evoluSettings.updateSetting(id, 'enabledCurrencies', JSON.stringify(currencies));
+    }
+  };
 
   const setSelectedCurrency = (currency: string) => {
     // first get the settings id.
@@ -71,7 +105,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       selectedCurrency, 
       setSelectedCurrency, 
       convertAmount, 
-      availableCurrencies: AVAILABLE_CURRENCIES
+      availableCurrencies: getEnabledCurrencies(),
+      setEnabledCurrencies,
+      allCurrencies: ALL_CURRENCIES,
+      exchangeRates: EXCHANGE_RATES
     }}>
       {children}
     </CurrencyContext.Provider>

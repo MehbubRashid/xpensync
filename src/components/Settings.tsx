@@ -12,11 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { useCurrency } from '@/context/CurrencyContext';
 
 export const Settings: React.FC = () => {
   const [currentMnemonic, setCurrentMnemonic] = useState('');
   const [restoreMnemonic, setRestoreMnemonic] = useState('');
   const evolu = useEvolu();
+  const { allCurrencies, availableCurrencies, setEnabledCurrencies, exchangeRates } = useCurrency();
 
   useEffect(() => {
     const owner = evolu.getOwner();
@@ -108,7 +111,34 @@ export const Settings: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="currencies" className='pt-10'>
-            <p>Currency settings will be implemented here.</p>
+            <div className="space-y-4">
+              <div className="rounded-md border">
+                <div className="divide-y">
+                  {allCurrencies.map((currency) => (
+                    <div key={currency} className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <p className="text-sm font-medium">{currency}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {currency === 'USD' ? 'Base currency' : `1 USD = ${exchangeRates[currency]} ${currency}`}
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={availableCurrencies.includes(currency)}
+                        onCheckedChange={(checked) => {
+                          const newCurrencies = checked
+                            ? [...availableCurrencies, currency]
+                            : availableCurrencies.filter(c => c !== currency);
+                          setEnabledCurrencies(newCurrencies);
+                        }}
+                        disabled={currency === 'USD'} // USD cannot be disabled as it's the base currency
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
