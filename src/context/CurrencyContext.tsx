@@ -86,7 +86,6 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const getCustomCurrencies = useCallback(() => {
     const customCurrenciesSetting = settings.find((setting) => setting.key === 'customCurrencies');
     if (customCurrenciesSetting) {
-      console.log(customCurrenciesSetting)
       if ( Array.isArray(customCurrenciesSetting.value) ) {
         return customCurrenciesSetting.value;
       }

@@ -21,6 +21,9 @@ const Index = () => {
               </div>
             </div>
           </div>
+          <div className="text-center text-sm text-muted-foreground py-3 [word-spacing:0.16rem]">
+            Made with ❤️ by <a className='text-foreground' href="https://x.com/mehbubrashid" target="_blank" rel="noopener noreferrer">Mehbub Rashid</a>
+          </div>
         </EntryProvider>
       </CurrencyProvider>
     </EvoluProvider>
