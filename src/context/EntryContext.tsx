@@ -68,6 +68,21 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     entryType: 'balance'
   });
 
+  // Add useEffect to set default timeGrouping based on entries
+  useEffect(() => {
+    if (entries.length > 0) {
+      const entryDates = entries.map(entry => new Date(entry.date));
+      const uniqueMonths = new Set(entryDates.map(date => `${date.getFullYear()}-${date.getMonth()}`));
+      
+      if (uniqueMonths.size >= 2) {
+        setChartFilters(prev => ({
+          ...prev,
+          timeGrouping: 'monthly'
+        }));
+      }
+    }
+  }, [entries]);
+
   const { convertAmount, selectedCurrency } = useCurrency();
 
   const addEntry = (entry: Omit<Entry, 'id'>) => {
