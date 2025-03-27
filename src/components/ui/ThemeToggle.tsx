@@ -16,8 +16,6 @@ export const ThemeToggle: React.FC = () => {
         "transition-colors duration-200"
       )}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      whileTap={{ scale: 0.9 }}
-      whileHover={{ scale: 1.1 }}
       initial={{ rotate: isDark ? 45 : 0 }}
       animate={{ 
         rotate: isDark ? 45 : 0,
@@ -28,14 +26,13 @@ export const ThemeToggle: React.FC = () => {
       <motion.div
         initial={false}
         animate={{
-          scale: isDark ? 0.75 : 1,
           opacity: isDark ? 0 : 1
         }}
         transition={{ duration: 0.2 }}
       >
         <Sun 
-          size={20} 
-          className={cn("text-black", isDark ? "opacity-100" : "opacity-100")} 
+          size={26} 
+          className={cn("text-foreground", isDark ? "opacity-100" : "opacity-100")} 
         />
       </motion.div>
       
@@ -43,14 +40,13 @@ export const ThemeToggle: React.FC = () => {
         className="absolute"
         initial={false}
         animate={{
-          scale: isDark ? 1 : 0.75,
           opacity: isDark ? 1 : 0
         }}
         transition={{ duration: 0.2 }}
       >
         <Moon 
           size={20} 
-          className={cn("text-indigo-400", isDark ? "opacity-100" : "opacity-0")} 
+          className={cn("text-foreground", isDark ? "opacity-100" : "opacity-0")} 
         />
       </motion.div>
     </motion.button>
