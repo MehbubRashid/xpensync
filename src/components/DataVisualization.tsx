@@ -82,19 +82,24 @@ export const DataVisualization: React.FC = () => {
 
   // Prepare data for the chart
   const chartDataForChart = useMemo(() => {
+    let data;
     if (chartFilters.entryType === 'balance') {
-      return filteredData.map(entry => ({
+      data = filteredData.map(entry => ({
         date: entry.date,
         balance: entry.balance,
         currency: entry.currency
       }));
+    } else {
+      data = filteredData.map(entry => ({
+        date: entry.date,
+        income: entry.income,
+        expense: entry.expense,
+        currency: entry.currency
+      }));
     }
-    return filteredData.map(entry => ({
-      date: entry.date,
-      income: entry.income,
-      expense: entry.expense,
-      currency: entry.currency
-    }));
+    
+    // Only show the last 100 data points
+    return data.slice(-100);
   }, [filteredData, chartFilters.entryType]);
 
   // Filter categories based on entry type
@@ -223,9 +228,10 @@ export const DataVisualization: React.FC = () => {
                 dataKey="date" 
                 axisLine={{ stroke: theme === 'dark' ? '#444444' : '#dddddd', strokeWidth: 0.8 }} 
                 tick={{ fill: '#71717a', fontSize: 12 }} 
+                tickCount={11}
               />
               <YAxis
-                domain={[0, 'auto']}
+                domain={['dataMin', 'dataMax']}
                 width={0}
               />
               <Tooltip content={<CustomTooltip />} />

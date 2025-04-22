@@ -74,12 +74,12 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const entryDates = entries.map(entry => new Date(entry.date));
       const uniqueMonths = new Set(entryDates.map(date => `${date.getFullYear()}-${date.getMonth()}`));
       
-      if (uniqueMonths.size >= 2) {
-        setChartFilters(prev => ({
-          ...prev,
-          timeGrouping: 'monthly'
-        }));
-      }
+      // if (uniqueMonths.size >= 3) {
+      //   setChartFilters(prev => ({
+      //     ...prev,
+      //     timeGrouping: 'monthly'
+      //   }));
+      // }
     }
   }, [entries]);
 
