@@ -148,7 +148,7 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
 
       // Filter by wallet
-      if (filters.walletId && entry.walletId !== filters.walletId) {
+      if (filters.walletId && entry.walletId !== filters.walletId && (!('toWalletId' in entry) || entry.toWalletId !== filters.walletId)) {
         return false;
       }
       
