@@ -7,4 +7,22 @@ export const formatDate = (dateString: string) => {
     console.error('Error formatting date:', error);
     return dateString;
   }
+};
+
+export const formatDateOnly = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'dd MMM yyyy');
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateString;
+  }
+};
+
+export const formatTimeOnly = (dateString: string) => {
+  try {
+    return format(parseISO(dateString), 'hh:mm a');
+  } catch (error) {
+    console.error('Error formatting time:', error);
+    return '';
+  }
 }; 

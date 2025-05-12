@@ -160,11 +160,14 @@ export const EntryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Group entries by date
     const filteredEntries = getFilteredEntries();
     return filteredEntries.reduce((acc, entry) => {
-      const date = entry.date;
-      if (!acc[date]) {
-        acc[date] = [];
+      // Extract just the date part for grouping (YYYY-MM-DD format)
+      const entryDate = new Date(entry.date);
+      const dateKey = `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}-${String(entryDate.getDate()).padStart(2, '0')}`;
+      
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
       }
-      acc[date].push(entry);
+      acc[dateKey].push(entry);
       return acc;
     }, {} as Record<string, Entry[]>);
   };

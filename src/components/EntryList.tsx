@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoriesList } from './CategoriesList';
 import { WalletsList } from './WalletsList';
-import { formatDate } from '@/lib/date';
+import { formatDate, formatDateOnly, formatTimeOnly } from '@/lib/date';
 import { EntryForm } from './EntryForm';
 import { EditEntryForm } from './EditEntryForm';
 import { EntryId, CategoryId, WalletId } from '@/evolu/schema';
@@ -153,12 +153,13 @@ const TransactionsList: React.FC = () => {
 			) : (
 				Object.entries(entriesByDate).map(([date, entries]) => (
 					<div key={date} className="space-y-2">
-						<h4 className='mt-[30px] text-muted-foreground'>{formatDate(date)}</h4>
+						<h4 className='mt-[30px] text-muted-foreground'>{formatDateOnly(date)}</h4>
 						<div className="divide-y divide-border rounded-md border bg-card text-card-foreground shadow-sm">
 							{entries.map((entry) => {
 								const category = getCategoryById(entry.categoryId as CategoryId);
 								const wallet = getWalletById(entry.walletId as WalletId);
 								const convertedAmount = convertAmount(entry.amount, entry.currency as Currency);
+								const entryTime = formatTimeOnly(entry.date);
 								return (
 									<div key={entry.id} className="block sm:flex justify-between items-center p-4">
 										<div className="flex items-center gap-3">
@@ -172,13 +173,14 @@ const TransactionsList: React.FC = () => {
 												<ArrowUpDown className="h-5 w-5 text-purple-500" />
 											)}
 											<div className="flex flex-col gap-1">
-												{
-													entry?.description ? (
+												<div className="flex items-center gap-2">
+													{entry?.description ? (
 														<p className="text-sm font-medium leading-none">{entry.description}</p>
 													) : (
 														<></>
-													)
-												}
+													)}
+													<span className="text-xs text-muted-foreground">{entryTime}</span>
+												</div>
 												<div className="flex items-center gap-2 text-sm text-muted-foreground">
 													<span>
 														{entry.type === 'transfer'
