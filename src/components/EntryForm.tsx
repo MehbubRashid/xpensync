@@ -35,7 +35,6 @@ export const EntryForm: React.FC = () => {
   const { addEntry, categories, wallets } = useEntry();
   const { selectedCurrency, availableCurrencies } = useCurrency();
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState<Date>(new Date());
   const [dateOpen, setDateOpen] = useState(false);
   const [preSelectedType, setPreSelectedType] = useState<EntryType>('expense');
   
@@ -71,6 +70,9 @@ export const EntryForm: React.FC = () => {
 
   // Filter wallets for "to wallet" selection (exclude the "from wallet")
   const filteredWallets = wallets.filter(wallet => wallet.id !== currentWalletId);
+
+  // Watch the date field from the form
+  const watchedDate = watch('date');
 
   const handleButtonClick = (type: EntryType) => {
     setPreSelectedType(type);
@@ -463,11 +465,11 @@ export const EntryForm: React.FC = () => {
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal shadow-sm",
-                        !date && "text-muted-foreground"
+                        !watchedDate && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PP") : <span>Pick a date</span>}
+                      {watchedDate ? format(watchedDate, "PP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0 z-50 pointer-events-auto" align="start">
@@ -478,10 +480,11 @@ export const EntryForm: React.FC = () => {
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={(date) => {
-                            field.onChange(date);
-                            setDate(date || new Date());
-                            setDateOpen(false);
+                          onSelect={(selectedDate) => {
+                            if (selectedDate) {
+                              field.onChange(selectedDate);
+                              setDateOpen(false);
+                            }
                           }}
                           initialFocus
                         />
