@@ -92,10 +92,17 @@ export const EditEntryForm: React.FC<EditEntryFormProps> = ({ entry, onClose }) 
     const receivedCurrency = watch('receivedCurrency');
     const amount = watch('amount');
     
-    if (sentCurrency === receivedCurrency && currentType === 'transfer' && amount) {
+    // Only auto-update received amount if:
+    // 1. The currencies match AND
+    // 2. The user hasn't already set a received amount OR the currencies just changed
+    const isInitialLoad = entry.receivedAmount === undefined;
+    const didCurrenciesChange = sentCurrency === receivedCurrency && 
+                               (entry.currency !== sentCurrency || entry.receivedCurrency !== receivedCurrency);
+    
+    if (currentType === 'transfer' && amount && sentCurrency === receivedCurrency && (isInitialLoad || didCurrenciesChange)) {
       setValue('receivedAmount', amount);
     }
-  }, [watch('amount'), watch('currency'), watch('receivedCurrency'), currentType, setValue, watch]);
+  }, [watch('amount'), watch('currency'), watch('receivedCurrency'), currentType, setValue, watch, entry]);
   
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
