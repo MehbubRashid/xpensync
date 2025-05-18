@@ -7,7 +7,7 @@ export const formatDate = (dateString: string) => {
     console.error('Error formatting date:', error);
     return dateString;
   }
-};
+}; 
 
 export const formatDateOnly = (dateString: string) => {
   try {

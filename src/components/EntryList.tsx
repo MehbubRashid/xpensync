@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useEntry } from '@/context/EntryContext';
 import { useCurrency } from '@/context/CurrencyContext';
-import { format } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,9 @@ import { formatDate, formatDateOnly, formatTimeOnly } from '@/lib/date';
 import { EntryForm } from './EntryForm';
 import { EditEntryForm } from './EditEntryForm';
 import { EntryId, CategoryId, WalletId } from '@/evolu/schema';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import { useTheme } from '@/context/ThemeContext';
 
 const TransactionsList: React.FC = () => {
 	const { getEntriesByDate, getCategoryById, getWalletById, filters, setFilters, categories, wallets, deleteEntry, editEntry } = useEntry();
@@ -261,15 +264,237 @@ const TransactionsList: React.FC = () => {
 	);
 };
 
+// Custom tooltip for the pie chart
+const CustomTooltip = ({ active, payload }: any) => {
+	if (active && payload && payload.length) {
+		return (
+			<div className="bg-card p-2 border rounded shadow">
+				<p className="font-medium">{payload[0].name}</p>
+				<p style={{ color: payload[0].color }}>
+					{payload[0].value.toFixed(2)} ({payload[0].payload.percentage.toFixed(2)}%)
+				</p>
+			</div>
+		);
+	}
+	return null;
+};
+
+// Colors for the pie chart
+const COLORS = ['#22c55e', '#ef4444', '#eab308', '#3b82f6', '#a855f7', '#ec4899', '#f97316', '#14b8a6', '#8b5cf6'];
+
+const BreakdownView: React.FC = () => {
+	const { entries, categories, getCategoryById } = useEntry();
+	const { convertAmount, selectedCurrency } = useCurrency();
+	const { theme } = useTheme();
+	
+	// Get current month and year
+	const currentDate = new Date();
+	const currentMonthKey = format(currentDate, 'yyyy-MM');
+	
+	// State for filters
+	const [entryType, setEntryType] = useState<'income' | 'expense'>('expense');
+	const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
+	
+	// Generate month options (from earliest transaction to current month)
+	const monthOptions = useMemo(() => {
+		const months = new Set<string>();
+		
+		// Add the current month first
+		months.add(currentMonthKey);
+		
+		// Add all months with transactions
+		entries.forEach(entry => {
+			const entryDate = new Date(entry.date);
+			const monthKey = format(entryDate, 'yyyy-MM');
+			months.add(monthKey);
+		});
+		
+		// Sort chronologically
+		return ['all', ...Array.from(months).sort()];
+	}, [entries, currentMonthKey]);
+	
+	// Filter entries by selected month and type
+	const filteredEntries = useMemo(() => {
+		return entries.filter(entry => {
+			// Filter by entry type
+			if (entry.type !== entryType) {
+				return false;
+			}
+			
+			// Filter by month if not "all"
+			if (selectedMonth !== 'all') {
+				const entryDate = new Date(entry.date);
+				const entryMonthKey = format(entryDate, 'yyyy-MM');
+				if (entryMonthKey !== selectedMonth) {
+					return false;
+				}
+			}
+			
+			return true;
+		});
+	}, [entries, entryType, selectedMonth]);
+	
+	// Group entries by category and calculate totals
+	const categoryData = useMemo(() => {
+		const categoryTotals = new Map<string, number>();
+		
+		filteredEntries.forEach(entry => {
+			if (!entry.categoryId) return;
+			
+			const category = getCategoryById(entry.categoryId as CategoryId);
+			if (!category) return;
+			
+			const convertedAmount = convertAmount(entry.amount, entry.currency as Currency);
+			
+			const currentTotal = categoryTotals.get(category.id) || 0;
+			categoryTotals.set(category.id, currentTotal + convertedAmount);
+		});
+		
+		// Calculate the total amount for percentage calculation
+		const totalAmount = Array.from(categoryTotals.values()).reduce((sum, amount) => sum + amount, 0);
+		
+		// Create data for pie chart
+		return Array.from(categoryTotals.entries()).map(([categoryId, amount], index) => {
+			const category = getCategoryById(categoryId as CategoryId);
+			return {
+				name: category?.name || 'Unknown',
+				value: amount,
+				percentage: (amount / totalAmount) * 100,
+				color: COLORS[index % COLORS.length]
+			};
+		}).sort((a, b) => b.value - a.value); // Sort by value (descending)
+	}, [filteredEntries, getCategoryById, convertAmount]);
+	
+	// Format the selected month for display
+	const formattedSelectedMonth = useMemo(() => {
+		if (selectedMonth === 'all') return 'All Time';
+		const [year, month] = selectedMonth.split('-');
+		return format(new Date(parseInt(year), parseInt(month) - 1), 'MMMM yyyy');
+	}, [selectedMonth]);
+	
+	return (
+		<div className="space-y-6">
+			<div className="flex flex-wrap gap-4 justify-end">
+				<div className="min-w-[150px]">
+					<Select
+						value={entryType}
+						onValueChange={(value) => setEntryType(value as 'income' | 'expense')}
+					>
+						<SelectTrigger id="entry-type" className="bg-card">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="income">Income</SelectItem>
+							<SelectItem value="expense">Expense</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
+				<div className="min-w-[200px]">
+					<Select
+						value={selectedMonth}
+						onValueChange={setSelectedMonth}
+					>
+						<SelectTrigger id="month-select" className="bg-card">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All Time</SelectItem>
+							{monthOptions.filter(m => m !== 'all').map(month => {
+								const [year, monthNum] = month.split('-');
+								const date = new Date(parseInt(year), parseInt(monthNum) - 1);
+								return (
+									<SelectItem key={month} value={month}>
+										{format(date, 'MMMM yyyy')}
+									</SelectItem>
+								);
+							})}
+						</SelectContent>
+					</Select>
+				</div>
+			</div>
+			
+			<Card>
+				<CardHeader>
+					<CardDescription> Total: {categoryData.reduce((sum, category) => sum + category.value, 0).toFixed(2)} {selectedCurrency}</CardDescription>
+				</CardHeader>
+				<CardContent>
+					{categoryData.length === 0 ? (
+						<div className="flex h-[300px] items-center justify-center">
+							<p className="text-muted-foreground">No data available for the selected filters</p>
+						</div>
+					) : (
+						<div className="h-[500px] sm:h-[400px]">
+							<ResponsiveContainer width="100%" height="100%">
+								<PieChart>
+									<Pie
+										data={categoryData}
+										cx="50%"
+										cy="50%"
+										labelLine={false}
+										outerRadius={130}
+										fill="#8884d8"
+										dataKey="value"
+									>
+										{categoryData.map((entry, index) => (
+											<Cell key={`cell-${index}`} fill={entry.color} />
+										))}
+									</Pie>
+									<Tooltip content={<CustomTooltip />} />
+									<Legend />
+								</PieChart>
+							</ResponsiveContainer>
+						</div>
+					)}
+				</CardContent>
+			</Card>
+			
+			{/* Show the data in table format as well */}
+			{categoryData.length > 0 && (
+				<div className="overflow-hidden rounded-lg border border-border">
+					<table className="w-full text-sm">
+						<thead className="bg-muted/50">
+							<tr>
+								<th className="px-4 py-3 text-left font-medium">Category</th>
+								<th className="px-4 py-3 text-right font-medium">Amount</th>
+								<th className="px-4 py-3 text-right font-medium">Percentage</th>
+							</tr>
+						</thead>
+						<tbody className="divide-y divide-border bg-card">
+							{categoryData.map((category, index) => (
+								<tr key={index}>
+									<td className="px-4 py-2 flex items-center">
+										<div className="h-3 w-3 rounded-full mr-2" style={{ backgroundColor: category.color }}></div>
+										{category.name}
+									</td>
+									<td className="px-4 py-2 text-right">
+										{category.value.toFixed(2)} {selectedCurrency}
+									</td>
+									<td className="px-4 py-2 text-right">
+										{category.percentage.toFixed(2)}%
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+		</div>
+	);
+};
+
 export const EntryList: React.FC = () => {
 	return (
 		<div className="!mt-[90px]">
-			<Tabs defaultValue="transactions" className="w-full">
-				<TabsList className="grid w-full grid-cols-3">
+			<Tabs defaultValue="breakdown" className="w-full">
+				<TabsList className="grid w-full grid-cols-4">
+					<TabsTrigger className='data-[state=active]:bg-card data-[state=active]:shadow-sm' value="breakdown">Breakdown</TabsTrigger>
 					<TabsTrigger className='data-[state=active]:bg-card data-[state=active]:shadow-sm' value="transactions">Transactions</TabsTrigger>
 					<TabsTrigger className='data-[state=active]:bg-card data-[state=active]:shadow-sm' value="categories">Categories</TabsTrigger>
 					<TabsTrigger className='data-[state=active]:bg-card data-[state=active]:shadow-sm' value="wallets">Wallets</TabsTrigger>
 				</TabsList>
+				<TabsContent value="breakdown" className="mt-[40px]">
+					<BreakdownView />
+				</TabsContent>
 				<TabsContent value="transactions" className="mt-[40px]">
 					<TransactionsList />
 				</TabsContent>

@@ -483,7 +483,7 @@ export const EntryForm: React.FC = () => {
                           onSelect={(selectedDate) => {
                             if (selectedDate) {
                               field.onChange(selectedDate);
-                              setDateOpen(false);
+                            setDateOpen(false);
                             }
                           }}
                           initialFocus
